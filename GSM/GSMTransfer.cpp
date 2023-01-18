@@ -586,8 +586,9 @@ void L3Frame::f3init()
 	mTimestamp = timef();
 }
 
-L3Frame::L3Frame(const char* binary, size_t len, SAPI_t sapi)
-	:mPrimitive(L3_DATA),mSapi(sapi) // Changed this mSapi from SAPIUNDEFINED to SAPI3 for Testcall function
+L3Frame::L3Frame(const L3Message& msg, Primitive wPrimitive, SAPI_t wSapi)
+	:BitVector(msg.bitsNeeded()),mPrimitive(wPrimitive),mSapi(wSapi),
+	mL2Length(msg.l2Length())
 {
 	f3init();
 	msg.write(*this);
@@ -596,7 +597,7 @@ L3Frame::L3Frame(const char* binary, size_t len, SAPI_t sapi)
 
 
 L3Frame::L3Frame(SAPI_t sapi,const char* hexString)
-	:mPrimitive(L3_DATA),mSapi(SAPI0)
+	:mPrimitive(L3_UNIT_DATA),mSapi(sapi)
 {
 	f3init();
 	size_t len = strlen(hexString);
@@ -611,8 +612,8 @@ L3Frame::L3Frame(SAPI_t sapi,const char* hexString)
 	}
 }
 
-L3Frame::L3Frame(const char* binary, size_t len)
-	:mPrimitive(L3_DATA),mSapi(SAPI3) // Changed this mSapi from SAPIUNDEFINED to SAPI0 for Testcall function
+L3Frame::L3Frame(const char* binary, size_t len, SAPI_t sapi)
+	:mPrimitive(L3_DATA),mSapi(sapi) // Changed this mSapi from SAPIUNDEFINED to SAPI3 for Testcall function
 {
 	f3init();
 	mL2Length = len;

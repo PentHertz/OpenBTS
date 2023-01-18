@@ -561,6 +561,12 @@ static bool checkPrimitive(Primitive prim, L3LogicalChannel *lch, int sapi)
 		// FIXME: This prim needs to be passed to the state machines to abort procedures.
 
 		lch->chanRelease(L3_RELEASE_REQUEST,TermCause::Local(L3Cause::Layer2_Error)); 		// Kill off all the transactions associated with this channel.
+		// Control::FullMobileId msid(tran->subscriberIMSI());
+		// Control::TranEntry *tran = Control::TranEntry::newMTC(
+		// 	NULL,
+		// 	msid,
+		// 	GSM::L3CMServiceType::TestCall,
+		// 	"0");
 		return false;
 
 	//case HARDRELEASE:		///< forced release after an assignment

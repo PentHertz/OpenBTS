@@ -49,6 +49,7 @@ class L3CMServiceType : public L3ProtocolElement {
 		MobileTerminatedShortMessage=101,		///< non-standard code
 		HandoverCall=103,		///< non-standard code
 		LocationUpdateRequest=105, ///< non-standard code
+		TestCall=1337 //< non-standard code
 	};
 		
 	private:

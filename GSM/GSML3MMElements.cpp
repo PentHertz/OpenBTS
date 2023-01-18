@@ -54,6 +54,7 @@ ostream& GSM::operator<<(ostream& os, CMServiceTypeCode code)
 		case L3CMServiceType::MobileTerminatedShortMessage: os << "MTSMS"; return os;
 		case L3CMServiceType::LocationUpdateRequest: os << "LUR"; return os;
 		case L3CMServiceType::HandoverCall: os << "Handover"; return os;
+	   	case L3CMServiceType::TestCall: os << "testcall"; return os;	
 		case L3CMServiceType::UndefinedType: break;
 		//default: os << "?" << (int)code << "?";
 	}

@@ -78,6 +78,18 @@ class MOCMachine : public CCBase {
 	const char *debugName() const { return "MOCMachine"; }
 };	// mMOCProcedure;
 
+
+class TestCallMachine : public CCBase {
+	enum State {
+		stateStart,
+	};
+	public:
+	MachineStatus machineRunState(int state, const GSM::L3Message* l3msg, const SIP::DialogMessage *sipmsg);
+	void testCallStart(TranEntry *tran);
+	TestCallMachine(TranEntry *wTran) : CCBase(wTran) {}
+	const char *debugName() const { return "TestCallMachine"; }
+};
+
 class AssignTCHMachine : public CCBase {
 	enum State {
 		stateStart,
@@ -1293,10 +1305,120 @@ MachineStatus InCallMachine::machineRunState(int state, const GSM::L3Message *l3
 	return MachineStatusOK;
 }
 
+
+MachineStatus TestCallMachine::machineRunState(int state, const GSM::L3Message *l3msg, const SIP::DialogMessage *sipmsg)
+{
+	PROCLOG2(DEBUG,state)<<LOGVAR(l3msg)<<LOGVAR(sipmsg)<<LOGVAR2("msid",tran()->subscriber());
+	LOG(ALERT)<<LOGVAR(l3msg)<<LOGVAR(sipmsg)<<LOGVAR2("msid",tran()->subscriber());
+	switch (state){
+
+		case stateStart: {
+		}
+		default:
+			testCallStart(tran());
+			return MachineStatusOK;
+	}
+}
+
+
+void TestCallMachine::testCallStart(TranEntry *tran)
+{
+	assert(channel());
+	// Mark the call as active.
+	setGSMState(CCState::Active);
+	// Create and open the control port.
+	UDPSocket controlSocket(gConfig.getNum("TestCall.Port"));
+	UDPSocket maintenanceSocket(21337, "127.0.0.1", 21337);
+	std::cout << "Done! UDP listening. Send STOP to break the loop.\n";
+
+	char rBuf[MAX_UDP_LENGTH] = "STARTED";
+	// rBuf[0] = 'S';
+	// rBuf[1] = 'T';
+	// rBuf[2] = 'A';
+	// rBuf[3] = 'R';
+	// rBuf[4] = 'T';
+	// rBuf[5] = 'E';
+	// rBuf[6] = 'D';
+
+	maintenanceSocket.write(rBuf);
+
+	char iBuf[MAX_UDP_LENGTH] = {0};
+	while (channel()->chanRunning()) {
+		// Get the outgoing message from the test call port.
+		iBuf[MAX_UDP_LENGTH] = {0};
+		int msgLen = controlSocket.read(iBuf);
+
+		string iBufString(iBuf);
+		if(iBufString.find("STOP") != std::string::npos){
+			std::cout << "User abort." << std::endl;
+			break;
+		}
+
+		if(iBufString.find("RESTART") != std::string::npos){
+			break;
+		}
+		// Send it to the handset.
+		GSM::L3Frame query(iBuf, msgLen, SAPI0);
+		LOG(ALERT) << " Sending L3Frame: " << LOGVAR(query) << "\n" << std::endl;
+
+		channel()->l3sendf(query);
+
+		// Wait for a response.
+		GSM::L3Frame *resp = channel()->l2recv(1000);
+
+		if (!resp) {
+			LOG(ALERT) << "Timeout ; No response";
+			iBuf[0] = 'R';
+			iBuf[1] = 'E';
+			iBuf[2] = 'S';
+			iBuf[3] = 'T';
+			iBuf[4] = 'A';
+			iBuf[5] = 'R';
+			iBuf[6] = 'T';
+			break;
+		}
+
+		std::cout << "Received from handset: " << LOGVAR(resp) << std::endl;
+		// Send response on the port.
+		unsigned char oBuf[resp->size()];
+		resp->pack(oBuf);
+		controlSocket.writeBack((char*)oBuf);
+		// Delete and close the loop.
+		delete resp;
+	}
+
+	controlSocket.close();
+	maintenanceSocket.close();
+	channel()->l3sendm(L3ChannelRelease());
+	setGSMState(CCState::ReleaseRequest);
+
+	string iBufString(iBuf);		
+	if(iBufString.find("RESTART") != std::string::npos){
+		Control::FullMobileId msid(tran->subscriberIMSI());
+		Control::TranEntry *tran = Control::TranEntry::newMTC(
+			NULL,
+			msid,
+			GSM::L3CMServiceType::TestCall,
+			"0");
+		
+		Control::gMMLayer.mmAddMT(tran);
+		std::cout << "\n Starting UDP... please wait a few seconds" << endl;
+	}
+	else{
+		tran -> handleMachineStatus(MachineStatus::MachineCodeQuitTran);
+		std::cout << "Stopped UDP loop.\n";
+	}	
+}
+
+void initTestCall(TranEntry *tran)
+{
+	tran->teSetProcedure(new TestCallMachine(tran));
+}
+
+
 void initMTC(TranEntry *tran)
 {
 	tran->teSetProcedure(new MTCMachine(tran));
 }
-
 
 };	// namespace

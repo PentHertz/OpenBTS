@@ -71,6 +71,7 @@ class MMUser : public MemCheckMMUser /*: public RefCntBase*/ {
 	typedef PtrList<TranEntry> MMUQueue_t;
 	MMUQueue_t mmuMTCq;
 	MMUQueue_t mmuMTSMSq;
+	MMUQueue_t mmuTESTCALL;
 	friend class MMLayer;
 	MMState mmuState;
 	MMContext* mmuContext;
@@ -146,6 +147,7 @@ class MMContext : public MemCheckMMContext /*: public RefCntBase*/ {
 		TE_MOSMS2,		// The follow-on MO-SMS.
 		TE_MTSMS,		// Only one MT-SMS allowed at a time.
 		TE_SS,			// Dedicated supplementary services transaction.
+		TE_TCall, 		// Testcall
 		TE_num			// Not a Transaction; The max number of entries in this table.
 	};
 	RefCntPointer<TranEntry> mmcTE[TE_num];

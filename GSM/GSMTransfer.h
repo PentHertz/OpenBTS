@@ -756,7 +756,7 @@ class L3Frame : public BitVector {		// (pat) This is in Layer3, common to UMTS a
 	/** Get a frame from raw binary. */
 	// pat removed 9-8-2014 because it is unused.  If you put it back in, add an explicit SAPI argument to make sure it is distguished
 	// from the other constructors.
-	//explicit L3Frame(const char*, size_t len);
+	explicit L3Frame(const char*, size_t len, SAPI_t sapi);
 
 	/** Protocol Discriminator, GSM 04.08 10.2. */
 	L3PD PD() const { return (L3PD)peekField(4,4); }

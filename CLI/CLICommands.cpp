@@ -515,6 +515,40 @@ static CLIStatus sendsms(int argc, char** argv, ostream& os)
 }
 
 
+static CLIStatus fuzzSMS(int argc, char** argv, ostream& os)
+{
+	if (argc<2) return BAD_NUM_ARGS;
+
+	char *IMSI = argv[1];
+	int port = 28670;
+
+	UDPSocket controlSocket(port);
+	std::cout << "UDP listening on port: " <<  port <<"\n";
+	while (true) {
+		// Get the outgoing message from the test call port.
+		char iBuf[MAX_UDP_LENGTH] = {0};
+		controlSocket.read(iBuf);
+		std::cout << "Sending by sms: " << iBuf << endl;
+		if(strcmp(iBuf, "STOP") == 0){
+			break;
+		}
+		string str(iBuf);
+		//string rest = "" + string(iBuf);
+		// We just use the IMSI, dont try to find a tmsi.
+		FullMobileId msid(IMSI);
+		Control::TranEntry *tran = Control::TranEntry::newMTSMS(
+							NULL,	// No SIPDialog
+							msid,
+							GSM::L3CallingPartyBCDNumber("0"),
+							str,						// message body
+							string("text/plain"));	// messate content type
+		Control::gMMLayer.mmAddMT(tran);
+		std::cout << "message submitted for delivery" << endl;
+	}
+	return SUCCESS;
+}
+
+
 /** Print current usage loads. */
 static CLIStatus printStats(int argc, char** argv, ostream& os)
 {
@@ -1080,6 +1114,30 @@ static CLIStatus endcall(int argc, char **argv, ostream& os)
 	return SUCCESS;
 }
 
+static CLIStatus testcall(int argc, char **argv, ostream& os)
+{
+	if (argc!=2) return BAD_NUM_ARGS;
+
+	char *IMSI = argv[1];
+	if (strlen(IMSI)>15) {
+		os << IMSI << " is not a valid IMSI" << endl;
+		return BAD_VALUE;
+	}
+
+
+	Control::FullMobileId msid(IMSI);
+	Control::TranEntry *tran = Control::TranEntry::newMTC(
+		NULL,
+		msid,
+		GSM::L3CMServiceType::TestCall,
+		"0");
+
+
+	Control::gMMLayer.mmAddMT(tran);
+	os << "IMSI: " << IMSI << endl;
+	os << "Starting UDP... please wait a few seconds" << endl;
+	return SUCCESS;
+}
 
 static void addGprsInfo(vector<string> &row, const GSM::L2LogicalChannel* chan)
 {
@@ -1749,7 +1807,8 @@ void Parser::addCommands()
 	addCommand("handover", handover,handoverHelp);
 	addCommand("memstat", memStat, "-- internal testing command: print memory use stats.");
 	addCommand("cbs", cbscmd, cbsHelp);
-
+	addCommand("testcall", testcall, "IMSI-- Open a UDP port on 28670 to send AT commands to Handset");
+	addCommand("fuzzSMS", fuzzSMS, "IMSI -- Open a UDP port on 28670 to send commands to Handset");
 	addCommand("power", powerCommand, powerHelp);
 }
 

@@ -118,13 +118,26 @@ bool MMUser::mmuServiceMTQueues()	// arg redundant with mmuContext->channel.
 			return true;
 		}
 	}
+	if (mmuContext->mmGetTran(MMContext::TE_TCall).isNULL()) {
+		if (mmuTESTCALL.size()) {
+			TranEntry *tran = mmuTESTCALL.pop_frontr();
+			
+			// Tie the transaction to this channel.
+			mmuContext->mmConnectTran(MMContext::TE_TCall,tran);
+			// Unlock and run Testcall function
+			gMMLock.unlock();
+			tran->lockAndStart();
+			return true;
+		}
+	}
+
 	return false;
 }
 
 bool MMUser::mmuIsEmpty()
 {
 	ScopedLock lock(mmuLock,__FILE__,__LINE__);
-	return mmuMTCq.size() + mmuMTSMSq.size() == 0;
+	return mmuMTCq.size() + mmuMTSMSq.size() + mmuTESTCALL.size() == 0;
 }
 
 bool MMContext::mmIsEmpty()
@@ -221,6 +234,7 @@ MMUser::MMUser(string& wImsi)
 
 GSM::ChannelType MMUser::mmuGetInitialChanType() const
 {
+	LOG(ALERT) << "MMUser::mmuGetInitialChanType() started ";
 	devassert(gMMLock.lockcnt());		// Caller locked it.
 	if (mmuMTCq.size()) {
 		TranEntry *front = this->mmuMTCq.front();
@@ -233,6 +247,9 @@ GSM::ChannelType MMUser::mmuGetInitialChanType() const
 		default:	// There shouldnt be anything else in the MTCq.
 			return GSM::SDCCHType;
 		}
+	}
+	if (mmuTESTCALL.size()) {
+		return GSM::SDCCHType;
 	}
 	devassert(mmuMTSMSq.size());
 	return GSM::SDCCHType;
@@ -511,6 +528,7 @@ RefCntPointer<TranEntry> MMContext::findTran(const L3Frame *frame, const L3Messa
 			}
 			break;
 		default:
+			LOG(ALERT) << "unrecognized L3 frame:"<<LOGVAR(pd);
 			LOG(ERR) << "unrecognized L3 frame:"<<LOGVAR(pd);
 			return (TranEntry*)NULL;	// hopeless.
 	}
@@ -641,6 +659,10 @@ void MMContext::mmcPageReceived() const
 	if (! tran2.isNULL()) {
 		LOG(ERR) <<mmcChan <<" received page response while MS had active MT-SMS:"<<tran2.self();
 	}
+	RefCntPointer<TranEntry> tran3 = mmGetTran(MMContext::TE_TCall);
+	if (! tran3.isNULL()) {
+		LOG(ERR) <<mmcChan <<" received page response while MS had active MT-SMS:"<<tran3.self();
+	}
 
 	// We dont need to do anything else.  The service loop will notice and start new transactions.
 }
@@ -715,6 +737,9 @@ void MMUser::mmuAddMT(TranEntry *tran)
 		break;
 	case L3CMServiceType::MobileTerminatedShortMessage:
 		mmuMTSMSq.push_back(tran);
+		break;
+	case L3CMServiceType::TestCall:
+		mmuTESTCALL.push_back(tran);
 		break;
 	default:
 		assert(0);
@@ -805,6 +830,7 @@ void MMContext::mmcText(std::ostream&os) const
 	if (mmcTE[TE_MOSMS2] != NULL) { os <<LOGVAR2("MO-SMS2",*mmcTE[TE_MOSMS2]); }
 	if (mmcTE[TE_MTSMS] != NULL) { os <<LOGVAR2("MT-SMS",*mmcTE[TE_MTSMS]); }
 	if (mmcTE[TE_SS] != NULL) { os <<LOGVAR2("SS",*mmcTE[TE_SS]); }
+	if (mmcTE[TE_TCall] != NULL) { os <<LOGVAR2("TCall",*mmcTE[TE_TCall]); }
 	os << ")";
 }
 
@@ -839,6 +865,7 @@ RefCntPointer<TranEntry> MMContext::mmGetTran(unsigned ati) const
 // After this, the RefCntPointer in mmcTE takes over the job of deleting the transaction when the last pointer to it disappears.
 void MMContext::mmConnectTran(ActiveTranIndex ati, TranEntry *tran)
 {
+	LOG(ALERT) << "mmConnectTran start with " << LOGVAR(ati) << " and: " << LOGVAR(tran);
 	devassert(gMMLock.lockcnt());		// Caller locked it.
 	// When a primary transaction is deleted we may promote the secondary transaction, so keep trying to make sure we delete them all:
 	for (unsigned tries = 0; tries < 3; tries++) {
@@ -857,6 +884,7 @@ void MMContext::mmConnectTran(ActiveTranIndex ati, TranEntry *tran)
 // Connect the Transaction to this channel.  Sets pointers in both directions.
 void MMContext::mmConnectTran(TranEntry *tran)
 {
+	//LOG(ALERT) << "mmConnectTran to channel start";
 	ScopedLock lock(gMMLock,__FILE__,__LINE__);	// I think this is unnecessary, but be safe.
 	ActiveTranIndex txi;
 	switch (tran->servicetype()) {
@@ -875,7 +903,9 @@ void MMContext::mmConnectTran(TranEntry *tran)
 		case L3CMServiceType::LocationUpdateRequest:
 			txi = TE_MM;
 			break;
-
+		case L3CMServiceType::TestCall:
+			txi = TE_TCall;
+			break;
 		case L3CMServiceType::SupplementaryService:
 			WATCHINFO("connect tran for SS");
 			txi = TE_SS;
@@ -1118,6 +1148,7 @@ bool MMLayer::mmTerminateByImsi(string imsi)
 // This is the way MMUsers are created from the SIP side.
 void MMLayer::mmAddMT(TranEntry *tran)
 {
+	LOG(ALERT) << "MMLayer::mmAddMT with: " << LOGVAR(tran);
 	LOG(DEBUG) <<this<<LOGVAR(tran);
 	{	ScopedLock lock(gMMLock,__FILE__,__LINE__);
 		string imsi(tran->subscriberIMSI());
@@ -1125,6 +1156,7 @@ void MMLayer::mmAddMT(TranEntry *tran)
 		// Is there a guaranteed tmsi?
 		// We will delay this until we page in case an LUR is occurring right now.
 		//if (uint32_t tmsi = gTMSITable.tmsiTabGetTMSI(imsi,true)) { mmu->mmuTmsi = /*tran->subscriber().mTmsi =*/ tmsi; }
+		LOG(ALERT) << "MMLayer::mmAddMT::mmu gives: " << LOGVAR(mmu);
 		assert(mmu);
 		mmu->mmuAddMT(tran);
 	}
@@ -1204,7 +1236,7 @@ MMUser *MMLayer::mmFindByMobileId(L3MobileIdentity&mid)
 // When called from the paging thread loop this function is responsible for noticing expired MMUsers and deleting them.
 void MMLayer::mmGetPages(NewPagingList_t &pages)
 {
-
+	
 	assert(pages.size() == 0);	// Caller passes us a new list each time.
 
 	{

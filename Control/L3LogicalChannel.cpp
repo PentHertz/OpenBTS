@@ -86,6 +86,7 @@ L3LogicalChannel *L3LogicalChannel::getSACCHL3() {
 
 void L3LogicalChannel::l3sendm(const GSM::L3Message& msg, const GSM::Primitive& prim/*=GSM::DATA*/, SAPI_t SAPI/*=0*/)
 {
+	LOG(INFO) <<"l3sendm"<<LOGVAR(prim)<<LOGVAR(SAPI)<<LOGVARP(msg);
 	WATCHINFO("l3sendm"<<LOGVAR(prim)<<LOGVAR(SAPI)<<LOGVARP(msg)<<" "<<this);	// 'this' is the descriptive string of the channel.
 	l2sendm(msg,prim,SAPI);
 }
@@ -94,6 +95,7 @@ void L3LogicalChannel::l3sendm(const GSM::L3Message& msg, const GSM::Primitive& 
 // Note that SAP is encoded in the L3Frame.
 void L3LogicalChannel::l3sendf(const GSM::L3Frame& frame)
 {
+	LOG(INFO) <<"l3sendf"<<LOGVAR(frame);
 	// 3-14-2014 pat: Changed the LOG levels, formerly we sent the frame to INFO and the message to DEBUG, but the frame is raw, so I reversed it.
 	LOG(DEBUG) <<this <<LOGVARP(frame);
 	if (IS_LOG_LEVEL(INFO)) {
@@ -109,6 +111,7 @@ void L3LogicalChannel::l3sendf(const GSM::L3Frame& frame)
 // We only call this from the thread service loop, so it is the last thing we ever do in the thread.
 void L3LogicalChannel::l3sendp(const GSM::Primitive& prim, SAPI_t SAPI)
 {
+	LOG(INFO) <<"l3sendp"<<LOGVAR(prim)<<LOGVAR(SAPI);
 	WATCHINFO("l3sendp"<<LOGVAR(prim)<<LOGVAR(SAPI)<<" "<<this);	// 'this' is the descriptive string of the channel.
 	//if (prim == RELEASE || prim == HARDRELEASE) {
 		//chanSetState(chReleased);	// Inform the service loop it should exit.

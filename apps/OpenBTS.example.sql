@@ -243,6 +243,7 @@ INSERT OR IGNORE INTO "CONFIG" VALUES('Test.GSM.SimulatedFER.Downlink','0',0,0,'
 INSERT OR IGNORE INTO "CONFIG" VALUES('Test.GSM.SimulatedFER.Uplink','0',0,0,'Probability (0-100) of dropping any uplink frame to test robustness.');
 INSERT OR IGNORE INTO "CONFIG" VALUES('Test.GSM.UplinkFuzzingRate','0',1,0,'Probability (0-100) of flipping a bit in any uplink frame to test robustness.  Static.');
 INSERT OR IGNORE INTO "CONFIG" VALUES('Test.SIP.SimulatedPacketLoss','0',1,0,'Probability (0-100) of dropping any inbound or outbound SIP packet to test robustness.  Static.');
+INSERT OR IGNORE INTO "CONFIG" VALUES('TestCall.Port', 28760, 0,0, 'Port for testcall function for exchanging L3 packets.');
 COMMIT;
 
 

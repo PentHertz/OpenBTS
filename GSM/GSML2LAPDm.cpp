@@ -413,7 +413,7 @@ void L2LAPDm::l2dlWriteHighSide(const L3Frame& frame)
 			normalRelease();
 			break;
 		case L3_HARDRELEASE_REQUEST:
-			LOG(ALERT)<< LOGVAR(frame);
+			//LOG(ALERT)<< LOGVAR(frame);
 			mLock.lock();
 			releaseLink(false,(Primitive)0);
 			mLock.unlock();
@@ -527,7 +527,7 @@ void L2LAPDm::T200Expiration()
 // (pat) Receive a frame from layer 1.
 void L2LAPDm::receiveFrame(const GSM::L2Frame& frame)
 {
-	LOG(ALERT)<<LOGVAR(frame);
+	//LOG(ALERT)<<LOGVAR(frame);
 	OBJLOG(DEBUG) << frame;
 
 	// Caller should hold mLock.

@@ -7,11 +7,11 @@
 ##########################################################
 
 # Installing compilation dependencies
-sudo apt install -y bc autoconf libtool libosip2-dev libortp-dev libusb-1.0-0-dev g++ sqlite3 libsqlite3-dev erlang libreadline6-dev libncurses5-dev git dpkg-dev debhelper libssl-dev cmake build-essential wget
+sudo apt install -y autoconf libtool libosip2-dev libortp-dev libusb-1.0-0-dev g++ sqlite3 libsqlite3-dev erlang libreadline6-dev libncurses5-dev git dpkg-dev debhelper libssl-dev cmake build-essential wget
 
 # Installing HD driver 4.1.0 (Ubuntu 22.04) or 4.6* (Ubuntu 24.04) & t ols from Ubuntu package manager
 ubuntu_version=$(lsb_release -rs)
-if (( $(echo "$ubuntu_version < 24.04" | bc -l) )); then
+if [ "$ubuntu_version" "<" "24.04" ]; then
     sudo apt install -y libuhd4.1.0 libzmq3-dev
 else
     sudo apt install -y libuhd4.6.0t64 cppzmq-dev

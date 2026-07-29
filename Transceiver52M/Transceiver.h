@@ -142,7 +142,7 @@ private:
   signalVector *DFEForward[8];         ///< most recent DFE feedforward filter of all timeslots
   signalVector *DFEFeedback[8];        ///< most recent DFE feedback filter of all timeslots
   float        chanRespOffset[8];      ///< most recent timing offset, e.g. TOA, of all timeslots
-  complex      chanRespAmplitude[8];   ///< most recent channel amplitude of all timeslots
+  fcomplex      chanRespAmplitude[8];   ///< most recent channel amplitude of all timeslots
 
 public:
 

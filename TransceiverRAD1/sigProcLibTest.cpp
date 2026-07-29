@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 
   generateRACHSequence(*gsmPulse,samplesPerSymbol);
 
-  complex a; float t;
+  fcomplex a; float t;
   detectRACHBurst(*RACHSeq, 5, samplesPerSymbol,&a,&t); 
 
   //cout << *RACHSeq << endl;
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
   
   //delayVector(*rsVector2,6.932);
 
-  complex ampl = 1;
+  fcomplex ampl = 1;
   float TOA = 0;
 
   //modBurst = rsVector2;
@@ -107,9 +107,9 @@ int main(int argc, char **argv) {
   /*
   signalVector channelResponse(4);
   signalVector::iterator c=channelResponse.begin();
-  *c = (complex) 9000.0; c++;
-  *c = (complex) 0.4*9000.0; c++; c++;
-  *c = (complex) -1.2*0;
+  *c = (fcomplex) 9000.0; c++;
+  *c = (fcomplex) 0.4*9000.0; c++; c++;
+  *c = (fcomplex) -1.2*0;
 
   signalVector *guhBurst = convolve(modBurst,&channelResponse,NULL,NO_DELAY);
   delete modBurst; modBurst = guhBurst;
@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
   cout << "ampl:" << ampl << endl;
   cout << "TOA: " << TOA << endl;
   //cout << "chanResp: " << *chanResp << endl;
-  SoftVector *demodBurst = demodulateBurst(*modBurst,*gsmPulse,samplesPerSymbol,(complex) ampl, TOA);
+  SoftVector *demodBurst = demodulateBurst(*modBurst,*gsmPulse,samplesPerSymbol,(fcomplex) ampl, TOA);
   
   cout << *demodBurst << endl;
 

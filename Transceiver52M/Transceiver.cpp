@@ -333,7 +333,7 @@ SoftVector *Transceiver::pullRadioVector(GSM::Time &wTime,
 {
   bool needDFE = false;
   int success = 0;
-  complex amplitude = 0.0;
+  fcomplex amplitude = 0.0;
   float TOA = 0.0, avg = 0.0;
 
   radioVector *rxBurst = (radioVector *) mReceiveFIFO->get();
@@ -391,7 +391,7 @@ SoftVector *Transceiver::pullRadioVector(GSM::Time &wTime,
          channelResponse[timeslot] = channelResp;
        	 chanRespOffset[timeslot] = chanOffset;
          chanRespAmplitude[timeslot] = amplitude;
-	 scaleVector(*channelResp, complex(1.0,0.0)/amplitude);
+	 scaleVector(*channelResp, fcomplex(1.0,0.0)/amplitude);
          designDFE(*channelResp, SNRestimate[timeslot], 7, &DFEForward[timeslot], &DFEFeedback[timeslot]);
          channelEstimateTime[timeslot] = rxBurst->getTime();  
          LOG(DEBUG) << "SNR: " << SNRestimate[timeslot] << ", DFE forward: " << *DFEForward[timeslot] << ", DFE backward: " << *DFEFeedback[timeslot];
@@ -427,7 +427,7 @@ SoftVector *Transceiver::pullRadioVector(GSM::Time &wTime,
     if ((corrType==RACH) || (!needDFE)) {
       burst = demodulateBurst(*vectorBurst, mSPSRx, amplitude, TOA);
     } else {
-      scaleVector(*vectorBurst,complex(1.0,0.0)/amplitude);
+      scaleVector(*vectorBurst,fcomplex(1.0,0.0)/amplitude);
       burst = equalizeBurst(*vectorBurst,
 			    TOA-chanRespOffset[timeslot],
 			    mSPSRx,

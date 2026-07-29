@@ -99,7 +99,7 @@ Transceiver::Transceiver(int wBasePort,
 	double beaconFreq = -1.0*(mNumARFCNs-1)*200e3;
 	for (int j = 0; j < mNumARFCNs; j++) {
 	  mFrequencyShifter[j] = new signalVector(157*mOversamplingRate);
-	  mFrequencyShifter[j]->fill(complex(1.0,0.0));
+	  mFrequencyShifter[j]->fill(fcomplex(1.0,0.0));
 	  mFrequencyShifter[j]->isRealOnly(false);
 	  frequencyShift(mFrequencyShifter[j],mFrequencyShifter[j],2.0*M_PI*(beaconFreq+j*400e3)/(1625.0e3/6.0*mOversamplingRate));
 	}
@@ -166,7 +166,7 @@ radioVector *Transceiver::fixRadioVector(BitVector &burst,
   signalVector* modBurst = modulateBurst(burst,*gsmPulse,
 					 8 + (wTime.TN() % 4 == 0),
 					 mSamplesPerSymbol);
-  /*complex rScale = complex(2*M_PI*((float) rand()/(float) RAND_MAX),(2*M_PI*((float) rand()/(float) RAND_MAX)));
+  /*fcomplex rScale = fcomplex(2*M_PI*((float) rand()/(float) RAND_MAX),(2*M_PI*((float) rand()/(float) RAND_MAX)));
   rScale = rScale/rScale.abs();
   scaleVector(*modBurst,rScale);*/
 
@@ -1057,7 +1057,7 @@ SoftVector *Demodulator::demodRadioVector(radioVector *rxBurst,
   // check to see if received burst has sufficient 
   signalVector *vectorBurst = rxBurst;
   //DEMOD_DEBUG << "vectorBurst: " << vectorBurst << " rxBurst: " << rxBurst;
-  complex amplitude = 0.0;
+  fcomplex amplitude = 0.0;
   float TOA = 0.0;
   float avgPwr = 0.0;
   /*if (!energyDetect(*vectorBurst,20*mSamplesPerSymbol,mEnergyThreshold,&avgPwr)) {
@@ -1116,7 +1116,7 @@ SoftVector *Demodulator::demodRadioVector(radioVector *rxBurst,
          channelResponse[timeslot] = channelResp;
        	 chanRespOffset[timeslot] = chanOffset;
          chanRespAmplitude[timeslot] = amplitude;
-	 scaleVector(*channelResp, complex(1.0,0.0)/amplitude);
+	 scaleVector(*channelResp, fcomplex(1.0,0.0)/amplitude);
          designDFE(*channelResp, SNRestimate[timeslot], 7, &DFEForward[timeslot], &DFEFeedback[timeslot]);
          channelEstimateTime[timeslot] = rxBurst->time();  
          DEMOD_DEBUG << "SNR: " << SNRestimate[timeslot] << ", DFE forward: " << *DFEForward[timeslot] << ", DFE backward: " << *DFEFeedback[timeslot];
@@ -1164,7 +1164,7 @@ SoftVector *Demodulator::demodRadioVector(radioVector *rxBurst,
 			      amplitude,TOA);
     }
     else { // TSC
-      scaleVector(*vectorBurst,complex(1.0,0.0)/amplitude);
+      scaleVector(*vectorBurst,fcomplex(1.0,0.0)/amplitude);
       burst = equalizeBurst(*vectorBurst,
 			    TOA-chanRespOffset[timeslot],
 			    mSamplesPerSymbol,

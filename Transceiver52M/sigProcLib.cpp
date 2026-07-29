@@ -68,7 +68,7 @@ struct CorrelationSequence {
   signalVector *sequence;
   void         *buffer;
   float        toa;
-  complex      gain;
+  fcomplex      gain;
 };
 
 /*
@@ -233,7 +233,7 @@ float sinLookup(const float x)
 
 
 /** compute e^(-jx) via lookup table. */
-complex expjLookup(float x)
+fcomplex expjLookup(float x)
 {
   float arg = x*M_1_2PI_F;
   while (arg > 1.0F) arg -= 1.0F;
@@ -243,7 +243,7 @@ complex expjLookup(float x)
   const int argI = (int)argT;
   const float delta = argT-argI;
   const float iDelta = 1.0F-delta;
-   return complex(iDelta*cosTable[argI] + delta*cosTable[argI+1],
+   return fcomplex(iDelta*cosTable[argI] + delta*cosTable[argI+1],
 		   iDelta*sinTable[argI] + delta*sinTable[argI+1]);
 }
 
@@ -443,7 +443,7 @@ static bool generateC1Pulse(int sps, PulseSequence *pulse)
   }
 
   pulse->c1_buffer = convolve_h_alloc(len);
-  pulse->c1 = new signalVector((complex *)
+  pulse->c1 = new signalVector((fcomplex *)
                                   pulse->c1_buffer, 0, len);
   pulse->c1->isRealOnly(true);
 
@@ -497,7 +497,7 @@ static PulseSequence *generateGSMPulse(int sps, int symbolLength)
   }
 
   pulse->c0_buffer = convolve_h_alloc(len);
-  pulse->c0 = new signalVector((complex *) pulse->c0_buffer, 0, len);
+  pulse->c0 = new signalVector((fcomplex *) pulse->c0_buffer, 0, len);
   pulse->c0->isRealOnly(true);
 
   /* Enable alingnment for SSE usage */
@@ -613,7 +613,7 @@ bool vectorSlicer(signalVector *x)
   signalVector::iterator xP = x->begin();
   signalVector::iterator xPEnd = x->end();
   while (xP < xPEnd) {
-    *xP = (complex) (0.5*(xP->real()+1.0F));
+    *xP = (fcomplex) (0.5*(xP->real()+1.0F));
     if (xP->real() > 1.0) *xP = 1.0;
     if (xP->real() < 0.0) *xP = 0.0;
     xP++;
@@ -788,7 +788,7 @@ bool delayVector(signalVector &wBurst, float delay)
 {
   int whole, h_len = 20;
   float frac;
-  complex *data;
+  fcomplex *data;
   signalVector *h, *shift;
   signalVector::iterator itr;
 
@@ -797,14 +797,14 @@ bool delayVector(signalVector &wBurst, float delay)
 
   /* Sinc interpolated fractional shift (if allowable) */
   if (fabs(frac) > 1e-2) {
-    data = (complex *) convolve_h_alloc(h_len);
+    data = (fcomplex *) convolve_h_alloc(h_len);
     h = new signalVector(data, 0, h_len);
     h->setAligned(true);
     h->isRealOnly(true);
 
     itr = h->end();
     for (int i = 0; i < h_len; i++)
-      *--itr = (complex) sinc(M_PI_F * (i - h_len / 2 - frac));
+      *--itr = (fcomplex) sinc(M_PI_F * (i - h_len / 2 - frac));
 
     shift = convolve(&wBurst, h, NULL, NO_DELAY);
 
@@ -843,7 +843,7 @@ bool delayVector(signalVector &wBurst, float delay)
 
 signalVector *gaussianNoise(int length, 
 			    float variance, 
-			    complex mean)
+			    fcomplex mean)
 {
 
   signalVector *noise = new signalVector(length);
@@ -855,14 +855,14 @@ signalVector *gaussianNoise(int length,
       u1 = (float) rand()/ (float) RAND_MAX;
     float u2 = (float) rand()/ (float) RAND_MAX;
     float arg = 2.0*M_PI*u2;
-    *nPtr = mean + stddev*complex(cos(arg),sin(arg))*sqrtf(-2.0*log(u1));
+    *nPtr = mean + stddev*fcomplex(cos(arg),sin(arg))*sqrtf(-2.0*log(u1));
     nPtr++;
   }
 
   return noise;
 }
 
-complex interpolatePoint(const signalVector &inSig,
+fcomplex interpolatePoint(const signalVector &inSig,
 			 float ix)
 {
   
@@ -871,7 +871,7 @@ complex interpolatePoint(const signalVector &inSig,
   int end = (int) (floor(ix) + 11);
   if ((unsigned) end > inSig.size()-1) end = inSig.size()-1;
   
-  complex pVal = 0.0;
+  fcomplex pVal = 0.0;
   if (!inSig.isRealOnly()) {
     for (int i = start; i < end; i++) 
       pVal += inSig[i] * sinc(M_PI_F*(i-ix));
@@ -884,10 +884,10 @@ complex interpolatePoint(const signalVector &inSig,
   return pVal;
 }
 
-static complex fastPeakDetect(const signalVector &rxBurst, float *index)
+static fcomplex fastPeakDetect(const signalVector &rxBurst, float *index)
 {
   float val, max = 0.0f;
-  complex amp;
+  fcomplex amp;
   int _index = -1;
 
   for (int i = 0; i < rxBurst.size(); i++) {
@@ -905,13 +905,13 @@ static complex fastPeakDetect(const signalVector &rxBurst, float *index)
   return amp;
 }
 
-complex peakDetect(const signalVector &rxBurst,
+fcomplex peakDetect(const signalVector &rxBurst,
 		   float *peakIndex,
 		   float *avgPwr) 
 {
   
 
-  complex maxVal = 0.0;
+  fcomplex maxVal = 0.0;
   float maxIndex = -1;
   float sumPower = 0.0;
 
@@ -931,8 +931,8 @@ complex peakDetect(const signalVector &rxBurst,
   
   float incr = 0.5;
   while (incr > 1.0/1024.0) {
-    complex earlyP = interpolatePoint(rxBurst,earlyIndex);
-    complex lateP =  interpolatePoint(rxBurst,lateIndex);
+    fcomplex earlyP = interpolatePoint(rxBurst,earlyIndex);
+    fcomplex lateP =  interpolatePoint(rxBurst,lateIndex);
     if (earlyP < lateP) 
       earlyIndex += incr;
     else if (earlyP > lateP)
@@ -956,7 +956,7 @@ complex peakDetect(const signalVector &rxBurst,
 }
 
 void scaleVector(signalVector &x,
-		 complex scale)
+		 fcomplex scale)
 {
   signalVector::iterator xP = x.begin();
   signalVector::iterator xPEnd = x.end();
@@ -1019,7 +1019,7 @@ bool multVector(signalVector &x,
 
 
 void offsetVector(signalVector &x,
-		  complex offset)
+		  fcomplex offset)
 {
   signalVector::iterator xP = x.begin();
   signalVector::iterator xPEnd = x.end();
@@ -1041,7 +1041,7 @@ bool generateMidamble(int sps, int tsc)
 {
   bool status = true;
   float toa;
-  complex *data = NULL;
+  fcomplex *data = NULL;
   signalVector *autocorr = NULL, *midamble = NULL;
   signalVector *midMidamble = NULL, *_midMidamble = NULL;
 
@@ -1067,17 +1067,17 @@ bool generateMidamble(int sps, int tsc)
   //       due to the pi/2 frequency shift, that 
   //       needs to be accounted for.
   //       26-midamble is 61 symbols into burst, has +90 degree phase shift.
-  scaleVector(*midMidamble, complex(-1.0, 0.0));
-  scaleVector(*midamble, complex(0.0, 1.0));
+  scaleVector(*midMidamble, fcomplex(-1.0, 0.0));
+  scaleVector(*midamble, fcomplex(0.0, 1.0));
 
   conjugateVector(*midMidamble);
 
   /* For SSE alignment, reallocate the midamble sequence on 16-byte boundary */
-  data = (complex *) convolve_h_alloc(midMidamble->size());
+  data = (fcomplex *) convolve_h_alloc(midMidamble->size());
   _midMidamble = new signalVector(data, 0, midMidamble->size());
   _midMidamble->setAligned(true);
   memcpy(_midMidamble->begin(), midMidamble->begin(),
-	 midMidamble->size() * sizeof(complex));
+	 midMidamble->size() * sizeof(fcomplex));
 
   autocorr = convolve(midamble, _midMidamble, NULL, NO_DELAY);
   if (!autocorr) {
@@ -1117,7 +1117,7 @@ bool generateRACHSequence(int sps)
 {
   bool status = true;
   float toa;
-  complex *data = NULL;
+  fcomplex *data = NULL;
   signalVector *autocorr = NULL;
   signalVector *seq0 = NULL, *seq1 = NULL, *_seq1 = NULL;
 
@@ -1136,10 +1136,10 @@ bool generateRACHSequence(int sps)
   conjugateVector(*seq1);
 
   /* For SSE alignment, reallocate the midamble sequence on 16-byte boundary */
-  data = (complex *) convolve_h_alloc(seq1->size());
+  data = (fcomplex *) convolve_h_alloc(seq1->size());
   _seq1 = new signalVector(data, 0, seq1->size());
   _seq1->setAligned(true);
-  memcpy(_seq1->begin(), seq1->begin(), seq1->size() * sizeof(complex));
+  memcpy(_seq1->begin(), seq1->begin(), seq1->size() * sizeof(fcomplex));
 
   autocorr = convolve(seq0, _seq1, autocorr, NO_DELAY);
   if (!autocorr) {
@@ -1176,10 +1176,10 @@ release:
 }
 
 static float computePeakRatio(signalVector *corr,
-                              int sps, float toa, complex amp)
+                              int sps, float toa, fcomplex amp)
 {
   int num = 0;
-  complex *peak;
+  fcomplex *peak;
   float rms, avg = 0.0;
 
   peak = corr->begin() + (int) rint(toa);
@@ -1235,7 +1235,7 @@ bool energyDetect(signalVector &rxBurst,
  */
 static int detectBurst(signalVector &burst,
                        signalVector &corr, CorrelationSequence *sync,
-                       float thresh, int sps, complex *amp, float *toa,
+                       float thresh, int sps, fcomplex *amp, float *toa,
                        int start, int len)
 {
   /* Correlate */
@@ -1262,7 +1262,7 @@ static int detectBurst(signalVector &burst,
 
   /* Compenate for residual rotation with dual Laurent pulse */
   if (sps == 4)
-    *amp = *amp * complex(0.0, 1.0);
+    *amp = *amp * fcomplex(0.0, 1.0);
 
   /* Compensate for residuate time lag */
   *toa = *toa - sync->toa;
@@ -1293,12 +1293,12 @@ static int detectClipping(signalVector &burst, float thresh)
 int detectRACHBurst(signalVector &rxBurst,
 		    float thresh,
 		    int sps,
-		    complex *amp,
+		    fcomplex *amp,
 		    float *toa)
 {
   int rc, start, target, head, tail, len;
   float _toa;
-  complex _amp;
+  fcomplex _amp;
   signalVector corr;
   CorrelationSequence *sync;
 
@@ -1347,11 +1347,11 @@ int detectRACHBurst(signalVector &rxBurst,
  *   tail: Search 4 symbols + maximum expected delay
  */
 int analyzeTrafficBurst(signalVector &rxBurst, unsigned tsc, float thresh,
-                        int sps, complex *amp, float *toa, unsigned max_toa,
+                        int sps, fcomplex *amp, float *toa, unsigned max_toa,
                         bool chan_req, signalVector **chan, float *chan_offset)
 {
   int rc, start, target, head, tail, len;
-  complex _amp;
+  fcomplex _amp;
   float _toa;
   signalVector corr;
   CorrelationSequence *sync;
@@ -1416,9 +1416,9 @@ signalVector *decimateVector(signalVector &wVector,
 
 
 SoftVector *demodulateBurst(signalVector &rxBurst, int sps,
-                            complex channel, float TOA) 
+                            fcomplex channel, float TOA) 
 {
-  scaleVector(rxBurst,((complex) 1.0)/channel);
+  scaleVector(rxBurst,((fcomplex) 1.0)/channel);
   delayVector(rxBurst,-TOA);
 
   signalVector *shapedBurst = &rxBurst;
@@ -1486,7 +1486,7 @@ bool designDFE(signalVector &channelResponse,
       G0ptr++;
       G1ptr++;
     }
-    complex k = (*G1.begin())/(*G0.begin());
+    fcomplex k = (*G1.begin())/(*G0.begin());
 
     if (i != Nf-1) {
       signalVector G0new = G1;
@@ -1507,17 +1507,17 @@ bool designDFE(signalVector &channelResponse,
 
   *feedbackFilter = new signalVector(nu);
   L[Nf-1]->segmentCopyTo(**feedbackFilter,Nf,nu);
-  scaleVector(**feedbackFilter,(complex) -1.0);
+  scaleVector(**feedbackFilter,(fcomplex) -1.0);
   conjugateVector(**feedbackFilter);
 
   signalVector v(Nf);
   signalVector::iterator vStart = v.begin();
   signalVector::iterator vPtr;
-  *(vStart+Nf-1) = (complex) 1.0;
+  *(vStart+Nf-1) = (fcomplex) 1.0;
   for(int k = Nf-2; k >= 0; k--) {
     Lptr = L[k]->begin()+k+1;
     vPtr = vStart + k+1;
-    complex v_k = 0.0;
+    fcomplex v_k = 0.0;
     for (int j = k+1; j < Nf; j++) {
       v_k -= (*vPtr)*(*Lptr);
       vPtr++; Lptr++;
@@ -1529,7 +1529,7 @@ bool designDFE(signalVector &channelResponse,
   signalVector::iterator w = (*feedForwardFilter)->end();
   for (int i = 0; i < Nf; i++) {
     delete L[i];
-    complex w_i = 0.0;
+    fcomplex w_i = 0.0;
     int endPt = ( nu < (Nf-1-i) ) ? nu : (Nf-1-i);
     vPtr = vStart+i;
     chanPtr = channelResponse.begin();

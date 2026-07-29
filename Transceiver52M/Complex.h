@@ -36,18 +36,18 @@ public:
   //@{
   /**@name from real */
   //@{
-  Complex(Real real, Real imag) {r=real; i=imag;}	// x=complex(a,b)
-  Complex(Real real) {r=real; i=0;}			// x=complex(a)
+  Complex(Real real, Real imag) {r=real; i=imag;}	// x=fcomplex(a,b)
+  Complex(Real real) {r=real; i=0;}			// x=fcomplex(a)
   //@}
   /**@name from nothing */
   //@{
-  Complex() {r=(Real)0; i=(Real)0;}			// x=complex()
+  Complex() {r=(Real)0; i=(Real)0;}			// x=fcomplex()
   //@}
   /**@name from other complex */
   //@{
-  Complex(const Complex<float>& z) {r=z.r; i=z.i;}	// x=complex(z)
-  Complex(const Complex<double>& z) {r=z.r; i=z.i;}	// x=complex(z)
-  Complex(const Complex<long double>& z) {r=z.r; i=z.i;}	// x=complex(z)
+  Complex(const Complex<float>& z) {r=z.r; i=z.i;}	// x=fcomplex(z)
+  Complex(const Complex<double>& z) {r=z.r; i=z.i;}	// x=fcomplex(z)
+  Complex(const Complex<long double>& z) {r=z.r; i=z.i;}	// x=fcomplex(z)
   //@}
   //@}
 
@@ -134,7 +134,7 @@ public:
 
 /**@name standard Complex manifestations */
 //@{
-typedef Complex<float> complex;
+typedef Complex<float> fcomplex;
 typedef Complex<double> dcomplex;
 typedef Complex<short> complex16;
 typedef Complex<long> complex32;

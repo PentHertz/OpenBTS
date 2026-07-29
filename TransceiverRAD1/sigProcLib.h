@@ -38,41 +38,41 @@ typedef enum ConvType {
 } ConvType;
 
 /** the core data structure of the Transceiver */
-class signalVector: public Vector<complex> 
+class signalVector: public Vector<fcomplex> 
 {
 
  private:
   
   Symmetry symmetry;   ///< the symmetry of the vector
-  bool realOnly;       ///< true if vector is real-valued, not complex-valued
+  bool realOnly;       ///< true if vector is real-valued, not fcomplex-valued
   
  public:
   
   /** Constructors */
   signalVector(int dSize=0, Symmetry wSymmetry = NONE):
-    Vector<complex>(dSize),
+    Vector<fcomplex>(dSize),
     realOnly(false)
     { 
       symmetry = wSymmetry; 
     };
     
-  signalVector(complex* wData, size_t start, 
+  signalVector(fcomplex* wData, size_t start, 
 	       size_t span, Symmetry wSymmetry = NONE):
-    Vector<complex>(NULL,wData+start,wData+start+span),
+    Vector<fcomplex>(NULL,wData+start,wData+start+span),
     realOnly(false)
     { 
       symmetry = wSymmetry; 
     };
       
   signalVector(const signalVector &vec1, const signalVector &vec2):
-    Vector<complex>(vec1,vec2),
+    Vector<fcomplex>(vec1,vec2),
     realOnly(false)
     { 
       symmetry = vec1.symmetry; 
     };
 	
   signalVector(const signalVector &wVector):
-    Vector<complex>(wVector.size()),
+    Vector<fcomplex>(wVector.size()),
     realOnly(false)
     {
       wVector.copyTo(*this); 
@@ -186,7 +186,7 @@ bool multVector(signalVector &x,
 /** Generate a vector of gaussian noise */
 signalVector *gaussianNoise(int length,
                             float variance = 1.0,
-                            complex mean = complex(0.0));
+                            fcomplex mean = fcomplex(0.0));
 
 /**
 	Given a non-integer index, interpolate a sample.
@@ -194,7 +194,7 @@ signalVector *gaussianNoise(int length,
 	@param ix The index.
 	@return The interpolated signal value.
 */
-complex interpolatePoint(const signalVector &inSig,
+fcomplex interpolatePoint(const signalVector &inSig,
 			 float ix);
 
 /**
@@ -204,7 +204,7 @@ complex interpolatePoint(const signalVector &inSig,
 	@param avgPower Power to value to receive mean power.
 	@return Peak value.
 */
-complex peakDetect(const signalVector &rxBurst,
+fcomplex peakDetect(const signalVector &rxBurst,
 		   float *peakIndex,
 		   float *avgPwr);
 
@@ -214,7 +214,7 @@ complex peakDetect(const signalVector &rxBurst,
         @param scale The scalar.
 */
 void scaleVector(signalVector &x,
-		 complex scale);
+		 fcomplex scale);
 
 /**      
         Add a constant offset to a vecotr.
@@ -222,7 +222,7 @@ void scaleVector(signalVector &x,
         @param offset The offset.
 */
 void offsetVector(signalVector &x,
-		  complex offset);
+		  fcomplex offset);
 
 /**
         Generate a modulated GSM midamble, stored within the library.
@@ -268,7 +268,7 @@ bool energyDetect(signalVector &rxBurst,
 bool detectRACHBurst(signalVector &rxBurst,
 		     float detectThreshold,
 		     int samplesPerSymbol,
-		     complex *amplitude,
+		     fcomplex *amplitude,
 		     float* TOA);
 
 /**
@@ -289,7 +289,7 @@ bool analyzeTrafficBurst(signalVector &rxBurst,
 			 unsigned TSC,
 			 float detectThreshold,
 			 int samplesPerSymbol,
-			 complex *amplitude,
+			 fcomplex *amplitude,
 			 float *TOA,
                          unsigned maxTOA,
                          bool requestChannel = false,
@@ -317,7 +317,7 @@ signalVector *decimateVector(signalVector &wVector,
 SoftVector *demodulateBurst(signalVector &rxBurst,
 			 const signalVector &gsmPulse,
 			 int samplesPerSymbol,
-			 complex channel,
+			 fcomplex channel,
 			 float TOA);
 
 /**
@@ -352,7 +352,7 @@ signalVector *polyphaseResampleVector(signalVector &wVector,
 */
 signalVector *resampleVector(signalVector &wVector,
 			     float expFactor,
-			     complex endPoint);
+			     fcomplex endPoint);
 
 /**
 	Design the necessary filters for a decision-feedback equalizer.

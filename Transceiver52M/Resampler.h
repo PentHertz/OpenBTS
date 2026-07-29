@@ -43,9 +43,9 @@ public:
 	bool init(float bw = 1.0f);
 
 	/* Rotate "commutator" and drive samples through filterbank
-	 *   @param in continuous buffer of input complex float values
+	 *   @param in continuous buffer of input fcomplex float values
 	 *   @param in_len input buffer length
-	 *   @param out continuous buffer of output complex float values
+	 *   @param out continuous buffer of output fcomplex float values
 	 *   @param out_len output buffer length
 	 *   @return number of samples outputted, negative on error
          *

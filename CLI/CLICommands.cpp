@@ -1807,8 +1807,8 @@ void Parser::addCommands()
 	addCommand("handover", handover,handoverHelp);
 	addCommand("memstat", memStat, "-- internal testing command: print memory use stats.");
 	addCommand("cbs", cbscmd, cbsHelp);
-	addCommand("testcall", testcall, "IMSI-- Open a UDP port on 28670 to send AT commands to Handset");
-	addCommand("fuzzSMS", fuzzSMS, "IMSI -- Open a UDP port on 28670 to send commands to Handset");
+	addCommand("testcall", testcall, "IMSI -- page IMSI and open the TestCall.Port UDP socket (default 28760) to inject raw L3 frames (MM/CC/...) into the handset");
+	addCommand("fuzzSMS", fuzzSMS, "IMSI -- open UDP port 28670 to submit message bodies to IMSI as MT-SMS");
 	addCommand("power", powerCommand, powerHelp);
 }
 

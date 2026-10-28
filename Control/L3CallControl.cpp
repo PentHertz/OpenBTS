@@ -17,6 +17,7 @@
 // Written by Pat Thompson
 
 #define LOG_GROUP LogGroup::Control
+#include <cstring>
 #include <GSML3CCElements.h>
 #include "ControlCommon.h"
 #include "L3CallControl.h"
@@ -1345,20 +1346,30 @@ void TestCallMachine::testCallStart(TranEntry *tran)
 	char iBuf[MAX_UDP_LENGTH] = {0};
 	while (channel()->chanRunning()) {
 		// Get the outgoing message from the test call port.
-		iBuf[MAX_UDP_LENGTH] = {0};
-		int msgLen = controlSocket.read(iBuf);
+		// Clear the whole buffer (NOT iBuf[MAX_UDP_LENGTH], which writes one
+		// byte past the end of the array).
+		memset(iBuf, 0, sizeof(iBuf));
+		// Use a timeout so we periodically re-check chanRunning() instead of
+		// blocking forever while the handset tears the channel down.
+		int msgLen = controlSocket.read(iBuf, 10000);
+		if (msgLen <= 0) {
+			// Timeout or error: no datagram this round, keep looping.
+			continue;
+		}
 
-		string iBufString(iBuf);
+		string iBufString(iBuf, msgLen);
 		if(iBufString.find("STOP") != std::string::npos){
 			std::cout << "User abort." << std::endl;
 			break;
 		}
 
 		if(iBufString.find("RESTART") != std::string::npos){
+			strcpy(iBuf, "RESTART");
 			break;
 		}
-		// Send it to the handset.
-		GSM::L3Frame query(iBuf, msgLen, SAPI0);
+		// Send the raw L3 bytes to the handset.
+		// SAPI0 carries MM/CC/RR; use SAPI3 instead for SMS (CP/RP) payloads.
+		GSM::L3Frame query(iBuf, (size_t)msgLen, SAPI0);
 		LOG(ALERT) << " Sending L3Frame: " << LOGVAR(query) << "\n" << std::endl;
 
 		channel()->l3sendf(query);
@@ -1368,21 +1379,18 @@ void TestCallMachine::testCallStart(TranEntry *tran)
 
 		if (!resp) {
 			LOG(ALERT) << "Timeout ; No response";
-			iBuf[0] = 'R';
-			iBuf[1] = 'E';
-			iBuf[2] = 'S';
-			iBuf[3] = 'T';
-			iBuf[4] = 'A';
-			iBuf[5] = 'R';
-			iBuf[6] = 'T';
+			strcpy(iBuf, "RESTART");
 			break;
 		}
 
 		std::cout << "Received from handset: " << LOGVAR(resp) << std::endl;
-		// Send response on the port.
-		unsigned char oBuf[resp->size()];
+		// Send the response back to the UDP peer. The payload is binary, so we
+		// must pass an explicit byte length: writeBack(const char*) would use
+		// strlen() and truncate at the first 0x00 byte. size() is in bits.
+		size_t respBytes = (resp->size() + 7) / 8;
+		unsigned char oBuf[respBytes];
 		resp->pack(oBuf);
-		controlSocket.writeBack((char*)oBuf);
+		controlSocket.writeBack((char*)oBuf, respBytes);
 		// Delete and close the loop.
 		delete resp;
 	}

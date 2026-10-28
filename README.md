@@ -249,3 +249,70 @@ Release	Name		SVN Reposiory	SVN Rev	Comments
 							merge-in of "S" Release
 5.0     ?                ?                              ?
 5.1     FlUxIuS         Penthertz                       Release for 2023 compiling with fresh Ubuntu 22.04
+
+
+## L3 message injection (testcall) with pycrate
+
+The "testcall" CLI command pages a handset and opens a UDP socket so you can
+inject raw Layer 3 frames (MM, CC, RR, ...) toward the phone and read its
+replies. It is meant for interacting with or fuzzing a handset in a controlled
+test setup (your own phone, shielded environment).
+
+How it works:
+- "testcall <IMSI>" pages the IMSI and, once the dedicated channel is up, opens
+  a UDP socket on the port given by the TestCall.Port config key (default 28760).
+- Each UDP datagram you send is wrapped verbatim in an L3Frame on SAPI 0 and
+  transmitted to the handset. The handset reply is written back to the UDP peer
+  as raw bytes. Send the text "STOP" to end the loop.
+- SAPI 0 carries MM/CC/RR. SMS (CP/RP) uses SAPI 3; for SMS bodies see the
+  "fuzzSMS" command, which opens UDP port 28670.
+
+Steps:
+1. Start OpenBTS and let the target handset register.
+2. In the OpenBTS CLI run (replace with your target IMSI):
+     testcall 001010000000001
+   Wait a few seconds for the channel to come up.
+3. Run the Python injector below on the same host.
+
+Python example (needs pycrate: pip install pycrate):
+
+    #!/usr/bin/env python3
+    import socket
+    from pycrate_mobile.TS24008_MM import MMIdentityRequest
+    from pycrate_mobile.TS24008_IE import IDTYPE_IMSI
+    from pycrate_mobile.NAS import parse_NAS_MO
+
+    BTS_IP = "127.0.0.1"
+    PORT   = 28760            # OpenBTS TestCall.Port
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.settimeout(3)
+
+    def inject(raw):
+        "Send raw L3 bytes to the handset, return the raw reply (or b'')."
+        sock.sendto(raw, (BTS_IP, PORT))
+        try:
+            data, _ = sock.recvfrom(1500)
+            return data
+        except socket.timeout:
+            return b""
+
+    # Craft a downlink MM Identity Request asking for the IMSI.
+    req = MMIdentityRequest(val={'IDType': IDTYPE_IMSI})
+    print("inject:", req.to_bytes().hex())     # e.g. 051801
+    resp = inject(req.to_bytes())
+
+    if resp:
+        print("reply :", resp.hex())
+        msg, err = parse_NAS_MO(resp)          # decode the uplink reply
+        if not err:
+            print(msg.show())
+    else:
+        print("no reply")
+
+    # Tell the BTS side to leave the injection loop.
+    sock.sendto(b"STOP", (BTS_IP, PORT))
+
+Craft any other message the same way, for example CC messages from
+pycrate_mobile.TS24008_CC (Setup, Alerting, Disconnect, ...) or RR messages.
+Whatever bytes you send are transmitted to the handset without modification.

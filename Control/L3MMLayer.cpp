@@ -121,9 +121,13 @@ bool MMUser::mmuServiceMTQueues()	// arg redundant with mmuContext->channel.
 	if (mmuContext->mmGetTran(MMContext::TE_TCall).isNULL()) {
 		if (mmuTESTCALL.size()) {
 			TranEntry *tran = mmuTESTCALL.pop_frontr();
-			
+			LOG(INFO) << "new TestCall"<<LOGVAR(tran)<<LOGVAR2("chan",mmuContext);
+
 			// Tie the transaction to this channel.
 			mmuContext->mmConnectTran(MMContext::TE_TCall,tran);
+			// Install the TestCall state machine before starting it, otherwise
+			// lockAndStart() has no currentProcedure() to run and asserts.
+			initTestCall(tran);
 			// Unlock and run Testcall function
 			gMMLock.unlock();
 			tran->lockAndStart();

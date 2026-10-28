@@ -3187,6 +3187,17 @@ ConfigurationKeyMap getConfigurationKeys()
 	map[tmp.getName()] = tmp;
 	}
 
+	{ ConfigurationKey tmp("TestCall.Port","28760",
+		"UDP port",
+		ConfigurationKey::DEVELOPER,
+		ConfigurationKey::VALRANGE,
+		"1024:65535",
+		true,
+		"UDP port the testcall feature listens on for raw L3 frames to inject toward the handset."
+	);
+	map[tmp.getName()] = tmp;
+	}
+
 	{ ConfigurationKey tmp("Control.CDR.Dirname","", // (pat) Added 7-2014.
 		"filename",
 		ConfigurationKey::DEVELOPER,
